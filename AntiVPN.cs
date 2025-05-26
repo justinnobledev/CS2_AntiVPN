@@ -1,66 +1,61 @@
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Attributes.Registration;
-using CounterStrikeSharp.API.Modules.Commands;
+using CounterStrikeSharp.API.Modules.Admin;
+using CounterStrikeSharp.API.Modules.Entities;
+using CounterStrikeSharp.API.ValveConstants.Protobuf;
 using Microsoft.Extensions.Logging;
 
 namespace AntiVPN;
 
 public class AntiVPN : BasePlugin
 {
-    public override string ModuleName => "Anti VPN & Country Blocker";
-    public override string ModuleAuthor => "Nocky";
-    public override string ModuleVersion => "1.0";
+    public override string ModuleName => "Anti VPN";
+    public override string ModuleAuthor => "Nocky & Retro";
+    public override string ModuleVersion => "1.1";
 
     public override void Load(bool hotReload)
     {
-        Config.CreateOrLoadConfig(ModuleDirectory + "/antivpn_config.json");
     }
+
     [GameEventHandler]
     private HookResult OnPlayerConnectFull(EventPlayerConnectFull @event, GameEventInfo info)
     {
-   	CCSPlayerController player = @event.Userid;
+        var player = @event.Userid;
 
         if (player == null || !player.IsValid || player.IsBot || player.IsHLTV || player.AuthorizedSteamID == null) 
             return HookResult.Continue;
 
-   	AddTimer(0.5f, () => CheckPlayerIP(player));
-	return HookResult.Continue;
-    }
+        Server.NextFrame(() =>
+        {
+            CheckPlayerIP(player);
+        });
 
-    [ConsoleCommand("css_antivpn_reload")]
-    [CommandHelper(whoCanExecute: CommandUsage.SERVER_ONLY)]
-    public void OnReloadCommand(CCSPlayerController caller, CommandInfo command)
-    {
-    	Config.CreateOrLoadConfig(ModuleDirectory + "/antivpn_config.json");
-        command.ReplyToCommand("The configuration file \"antivpn_config.json\" reloaded.");
+        return HookResult.Continue;
     }
+    
     public void CheckPlayerIP(CCSPlayerController player)
     {
         string ipAddress = player!.IpAddress!.Split(":")[0];
         string steamid = player!.AuthorizedSteamID!.SteamId64.ToString();
 
-        var isVPN = IsIpVPN(ipAddress).GetAwaiter().GetResult();
-        if (isVPN){
-            if (!Config.SteamidWhitelist!.Contains(steamid))
-            {
-                Server.ExecuteCommand($"kickid {player.UserId} VPN usage is not allowed on this server");
-                Logger.LogInformation($"Player {player.PlayerName} ({steamid}) ({ipAddress}) has been kicked. (VPN Usage)");
-                return;
-            }
-            return;
-        }
-        var countryCode = GetCountryCode(ipAddress).GetAwaiter().GetResult();
-        if (Config.BlockedCountries!.Contains(countryCode))
+        var admin = AdminManager.GetPlayerAdminData(new SteamID(player.SteamID));
+        if (admin?.GetAllFlags().Contains("@css/reservation") ?? false) return;
+
+        Task.Run(async () =>
         {
-            if (!Config.SteamidWhitelist!.Contains(steamid))
+            var isVPN = await IsIpVPN(ipAddress);
+            Server.NextFrame(() =>
             {
-                Server.ExecuteCommand($"kickid {player.UserId} Your country is not allowed on this server");
-                Logger.LogInformation($"Player {player.PlayerName} ({steamid}) ({ipAddress} | {countryCode}) has been kicked. (Disabled Country)");
-                return;
-            }
-            return;
-        }
+                if (!player.IsValid) return;
+                if (isVPN)
+                {
+                    player.Disconnect(NetworkDisconnectionReason.NETWORK_DISCONNECT_REJECTED_BY_GAME);
+                    Logger.LogInformation($"Player {player.PlayerName} ({steamid}) ({ipAddress}) has been kicked. (VPN Usage)");
+                }
+            });
+
+        });
     }
     static async Task <bool>IsIpVPN(string ipAddress)
     {
@@ -80,22 +75,6 @@ public class AntiVPN : BasePlugin
                 }
             }
             return false;
-        }
-    }
-    static async Task <string>GetCountryCode(string ipAddress)
-    {   
-        using (var client = new HttpClient())
-        {
-            string requestURL = $"https://ipinfo.io/{ipAddress}/json";
-
-            HttpResponseMessage response = await client.GetAsync(requestURL);
-            if (response.IsSuccessStatusCode)
-            {
-                string jsonResponse = await response.Content.ReadAsStringAsync();
-                dynamic data = Newtonsoft.Json.JsonConvert.DeserializeObject(jsonResponse)!;
-                return $"{data.country}";
-            }
-            return "";
         }
     }
 }
