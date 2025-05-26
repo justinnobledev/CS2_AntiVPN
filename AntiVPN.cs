@@ -16,9 +16,9 @@ public class AntiVPN : BasePlugin
 
     public override void Load(bool hotReload)
     {
+        RegisterEventHandler<EventPlayerConnectFull>(OnPlayerConnectFull);
     }
 
-    [GameEventHandler]
     private HookResult OnPlayerConnectFull(EventPlayerConnectFull @event, GameEventInfo info)
     {
         var player = @event.Userid;
