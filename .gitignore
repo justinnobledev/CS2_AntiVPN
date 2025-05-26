@@ -1,0 +1,72 @@
+# .NET build artifacts
+bin/
+obj/
+out/
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# VS Code settings
+.vscode/
+
+# Rider settings (optional)
+.idea/
+
+# Dotnet CLI artifacts
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# ASP.NET Scaffolding
+ScaffoldingReadMe.txt
+
+# NuGet packages
+*.nupkg
+*.snupkg
+packages/
+*.nuspec
+*.psmdcp
+*.cache
+*.log
+
+# Logs
+*.log
+
+# Visual Studio for Mac
+.vscode/
+.vscode_test/
+
+# Mac & Linux OS files
+.DS_Store
+*.swp
+*.swo
+
+# Test results
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+
+# Resharper
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+
+# Build output folders
+publish/
+dist/
+
+# Secrets or sensitive files
+secrets.json
+
+# Optional: if using dotenv
+.env
+
+# Rider-specific
+.idea/
+
+# Optional: for JetBrains IDEs
+*.DotSettings
