@@ -26,7 +26,7 @@ public class AntiVPN : BasePlugin
         if (player == null || !player.IsValid || player.IsBot || player.IsHLTV || player.AuthorizedSteamID == null) 
             return HookResult.Continue;
 
-        Server.NextFrame(() =>
+        AddTimer(1f, () =>
         {
             CheckPlayerIP(player);
         });
