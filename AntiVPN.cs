@@ -3,6 +3,7 @@ using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Attributes.Registration;
 using CounterStrikeSharp.API.Modules.Admin;
 using CounterStrikeSharp.API.Modules.Entities;
+using CounterStrikeSharp.API.Modules.Timers;
 using CounterStrikeSharp.API.ValveConstants.Protobuf;
 using Microsoft.Extensions.Logging;
 
@@ -17,6 +18,14 @@ public class AntiVPN : BasePlugin
     public override void Load(bool hotReload)
     {
         RegisterEventHandler<EventPlayerConnectFull>(OnPlayerConnectFull);
+        if (hotReload)
+        {
+            foreach (var player in Utilities.GetPlayers())
+            {
+                if (player == null || !player.IsValid || player.IsBot || player.IsHLTV || player.AuthorizedSteamID == null) continue;
+                CheckPlayerIP(player);
+            }
+        }
     }
 
     private HookResult OnPlayerConnectFull(EventPlayerConnectFull @event, GameEventInfo info)
@@ -47,12 +56,15 @@ public class AntiVPN : BasePlugin
             var isVPN = await IsIpVPN(ipAddress);
             Server.NextFrame(() =>
             {
-                if (!player.IsValid) return;
+                AddTimer(5f, () =>
+                {
+                    if (!player.IsValid) return;
                 if (isVPN)
                 {
                     player.Disconnect(NetworkDisconnectionReason.NETWORK_DISCONNECT_REJECTED_BY_GAME);
                     Logger.LogInformation($"Player {player.PlayerName} ({steamid}) ({ipAddress}) has been kicked. (VPN Usage)");
                 }
+                }, TimerFlags.STOP_ON_MAPCHANGE);
             });
 
         });
