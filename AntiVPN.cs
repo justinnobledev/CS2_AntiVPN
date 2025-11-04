@@ -13,7 +13,7 @@ public class AntiVPN : BasePlugin
 {
     public override string ModuleName => "Anti VPN";
     public override string ModuleAuthor => "Nocky & Retro";
-    public override string ModuleVersion => "1.1";
+    public override string ModuleVersion => "1.2";
 
     public override void Load(bool hotReload)
     {
